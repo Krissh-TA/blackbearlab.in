@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BBL Dashboard — Parliamentary Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0a;--bg2:#111;--bgc:#141414;--bg3:#0d0d0d;--border:#1f1f1f;--border2:#2a2a2a;--text:#e8e8e8;--text2:#888;--muted:#555;--gold:#c9a54e;--gold-dim:#8a7235;--gold-glow:rgba(201,165,78,0.08);--green:#2ecc71;--red:#e74c3c;--blue:#3b82f6;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;overflow-x:hidden;-webkit-font-smoothing:antialiased;min-height:100vh;}
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border2);}
+
+/* TOPBAR */
+.topbar{position:fixed;top:0;width:100%;z-index:100;height:52px;background:rgba(10,10,10,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;}
+.topbar-left{display:flex;align-items:center;gap:24px;}
+.topbar-logo{font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--text);}
+.topbar-logo span{color:var(--gold);}
+.topbar-nav{display:flex;gap:2px;}
+.nav-item{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:5px 14px;cursor:pointer;transition:all .15s;border-bottom:2px solid transparent;}
+.nav-item:hover{color:var(--text2);}
+.nav-item.active{color:var(--gold);border-bottom-color:var(--gold);}
+.topbar-right{display:flex;align-items:center;gap:16px;}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--green);}
+.live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:livepulse 1.5s ease-in-out infinite;}
+@keyframes livepulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.user-info{font-size:10px;color:var(--muted);letter-spacing:1px;}
+.user-info span{color:var(--gold);}
+.signout{font-size:10px;color:var(--muted);background:none;border:1px solid var(--border);padding:4px 12px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .15s;font-family:'JetBrains Mono',monospace;}
+.signout:hover{border-color:var(--gold-dim);color:var(--gold);}
+
+/* GOLD STRIPE */
+.gold-stripe{position:fixed;top:52px;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold-dim),var(--gold),var(--gold-dim));z-index:99;}
+
+/* TICKER BAR */
+.ticker-bar{position:fixed;top:54px;left:0;right:0;height:28px;background:var(--bg3);border-bottom:1px solid var(--border);overflow:hidden;display:flex;align-items:center;z-index:98;}
+.ticker-track{display:flex;white-space:nowrap;animation:tick 40s linear infinite;gap:0;}
+.ticker-track span{font-size:9px;letter-spacing:.15em;color:var(--muted);padding:0 28px;}
+.ticker-track span::before{content:"◆  ";color:var(--gold-dim);}
+.ticker-track span.alert-tick{color:var(--gold);}
+@keyframes tick{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+
+/* LAYOUT */
+.layout{display:flex;margin-top:82px;min-height:calc(100vh - 82px);}
+
+/* SIDEBAR */
+.sidebar{width:200px;background:var(--bg2);border-right:1px solid var(--border);position:fixed;top:82px;bottom:0;overflow-y:auto;flex-shrink:0;}
+.sidebar-section{padding:20px 0 8px;}
+.sidebar-label{font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:var(--muted);padding:0 16px;margin-bottom:6px;}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:8px 16px;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s;border-left:2px solid transparent;}
+.sidebar-item:hover{background:rgba(255,255,255,0.02);color:var(--text2);}
+.sidebar-item.active{color:var(--gold);border-left-color:var(--gold);background:var(--gold-glow);}
+.sidebar-item .icon{font-size:13px;width:14px;text-align:center;}
+.sidebar-badge{margin-left:auto;background:var(--gold);color:var(--bg);font-size:8px;font-weight:700;padding:2px 5px;min-width:16px;text-align:center;}
+.sidebar-badge.red{background:var(--red);}
+.sidebar-divider{height:1px;background:var(--border);margin:8px 16px;}
+
+/* MAIN */
+.main{margin-left:200px;flex:1;padding:20px;overflow-y:auto;}
+
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);padding:14px 18px;position:relative;transition:border-color .2s;}
+.stat-card:hover{border-color:var(--border2);}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1.5px;background:var(--gold-dim);}
+.stat-card.alert-card::before{background:var(--red);}
+.stat-label{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.stat-num{font-family:'Instrument Serif',serif;font-size:32px;font-weight:400;color:var(--text);line-height:1;}
+.stat-num.gold{color:var(--gold);}
+.stat-num.red{color:var(--red);}
+.stat-sub{font-size:9px;color:var(--muted);margin-top:5px;}
+.stat-delta{position:absolute;top:14px;right:14px;font-size:9px;}
+.up{color:var(--green);}.down{color:var(--red);}
+
+/* SECTION HEADER */
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.sec-title{font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:8px;}
+.sec-title::before{content:'';width:14px;height:1px;background:var(--gold);}
+.sec-action{font-size:9px;color:var(--muted);cursor:pointer;letter-spacing:.1em;}
+.sec-action:hover{color:var(--text2);}
+
+/* GRID */
+.feed-grid{display:grid;grid-template-columns:1fr 340px;gap:14px;margin-bottom:20px;}
+
+/* BILL CARDS */
+.bill-feed{display:flex;flex-direction:column;gap:10px;}
+.bill-card{background:var(--bg2);border:1px solid var(--border);padding:16px 18px;cursor:pointer;transition:all .15s;position:relative;}
+.bill-card:hover{border-color:var(--border2);background:var(--bgc);}
+.bill-card.featured{border-left:2px solid var(--gold);}
+.bill-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;}
+.bill-meta-top{display:flex;align-items:center;gap:8px;}
+.bill-number{font-size:8.5px;letter-spacing:.15em;color:var(--gold-dim);text-transform:uppercase;}
+.bill-house{font-size:8.5px;color:var(--muted);}
+.sentiment-badge{font-size:8px;letter-spacing:.1em;padding:2px 8px;text-transform:uppercase;flex-shrink:0;}
+.s-regulatory{background:rgba(59,130,246,.1);color:#60a5fa;}
+.s-bullish{background:rgba(46,204,113,.1);color:var(--green);}
+.s-bearish{background:rgba(231,76,60,.1);color:var(--red);}
+.s-neutral{background:rgba(85,85,85,.15);color:var(--muted);}
+.bill-title{font-family:'Instrument Serif',serif;font-size:16px;font-weight:400;color:var(--text);margin-bottom:5px;line-height:1.3;}
+.bill-summary{font-size:11px;color:var(--text2);line-height:1.65;margin-bottom:10px;}
+.bill-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;}
+.bill-tag{font-size:8.5px;color:var(--muted);border:1px solid var(--border);padding:2px 7px;}
+.bill-footer{display:flex;align-items:center;gap:16px;border-top:1px solid var(--border);padding-top:10px;flex-wrap:wrap;}
+.bill-footer-item{font-size:8.5px;color:var(--muted);display:flex;align-items:center;gap:4px;}
+.urgency-high{color:var(--red)!important;}
+.urgency-med{color:var(--gold)!important;}
+.urgency-low{color:var(--green)!important;}
+.affected-stocks{display:flex;gap:4px;margin-left:auto;}
+.stock-tag{font-size:8px;background:rgba(201,165,78,.08);color:var(--gold);border:1px solid var(--gold-dim);padding:2px 6px;}
+
+/* RIGHT PANEL */
+.right-panel{display:flex;flex-direction:column;gap:12px;}
+.panel-box{background:var(--bg2);border:1px solid var(--border);}
+.panel-header{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.panel-header-title{font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:6px;}
+
+/* DEBATE FEED */
+.debate-list{max-height:280px;overflow-y:auto;}
+.debate-item{padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+.debate-item:hover{background:rgba(255,255,255,.02);}
+.debate-item:last-child{border-bottom:none;}
+.debate-time{font-size:8px;color:var(--gold-dim);letter-spacing:.1em;margin-bottom:3px;}
+.debate-speaker{font-size:11px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.debate-role{font-size:9px;color:var(--muted);}
+.debate-text{font-size:11px;color:var(--text2);line-height:1.55;margin-top:5px;}
+.debate-companies{display:flex;gap:3px;margin-top:6px;flex-wrap:wrap;}
+.co-tag{font-size:8px;background:rgba(59,130,246,.1);color:#60a5fa;padding:2px 5px;}
+.debate-sentiment{font-size:8px;padding:2px 6px;margin-top:4px;display:inline-block;}
+
+/* ALERTS */
+.alert-list{}
+.alert-item{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;gap:10px;}
+.alert-item:last-child{border-bottom:none;}
+.alert-dot{width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0;}
+.a-high{background:var(--red);}
+.a-med{background:var(--gold);}
+.a-low{background:var(--green);}
+.alert-text{font-size:11px;color:var(--text2);line-height:1.5;}
+.alert-text strong{color:var(--text);}
+.alert-time{font-size:8.5px;color:var(--muted);margin-top:3px;}
+
+/* PENALTIES TABLE */
+.table-wrap{background:var(--bg2);border:1px solid var(--border);margin-bottom:14px;overflow-x:auto;}
+.table-head{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+table{width:100%;border-collapse:collapse;}
+th{background:var(--bg3);color:var(--muted);font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;padding:9px 14px;text-align:left;font-weight:400;border-bottom:1px solid var(--border);}
+td{font-size:11px;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,0.03);color:var(--text2);vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,0.01);}
+td.mono{font-size:9.5px;color:var(--gold-dim);}
+td.penalty-amt{color:var(--red);font-weight:700;}
+td.imprison{color:#f97316;}
+
+/* FILTER BAR */
+.filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.filter-btn{font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:5px 12px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;font-family:'JetBrains Mono',monospace;}
+.filter-btn:hover,.filter-btn.active{background:var(--gold-glow);color:var(--gold);border-color:var(--gold-dim);}
+.search-bar{flex:1;max-width:260px;padding:6px 12px;background:var(--bg2);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;}
+.search-bar:focus{border-color:var(--gold-dim);}
+.search-bar::placeholder{color:var(--muted);}
+
+/* BILL DETAIL PANEL */
+.detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;align-items:flex-start;justify-content:flex-end;padding:82px 0 0 200px;}
+.detail-overlay.open{display:flex;}
+.detail-panel{background:var(--bg2);width:620px;height:100%;overflow-y:auto;border-left:1px solid var(--border);animation:slideIn .2s ease;}
+@keyframes slideIn{from{transform:translateX(30px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.detail-topbar{background:var(--bg3);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;}
+.detail-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;transition:color .15s;}
+.detail-close:hover{color:var(--text);}
+.detail-body{padding:20px;}
+.detail-section{margin-bottom:20px;}
+.detail-section-title{font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;}
+.detail-section-title::before{content:'';width:10px;height:1px;background:var(--gold);}
+.detail-row{display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,0.04);padding:6px 0;}
+.detail-row:last-child{border-bottom:none;}
+.detail-key{font-size:9px;color:var(--muted);min-width:140px;flex-shrink:0;line-height:1.5;}
+.detail-val{font-size:11px;color:var(--text2);line-height:1.5;}
+.detail-val.gold{color:var(--gold);}
+.detail-val.red{color:var(--red);}
+.detail-para{font-size:12px;color:var(--text2);line-height:1.75;}
+.tag-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+.dtag{font-size:8.5px;color:var(--muted);border:1px solid var(--border);padding:2px 7px;}
+.dtag.gold{border-color:var(--gold-dim);color:var(--gold);}
+.dtag.red{border-color:rgba(231,76,60,.3);color:var(--red);}
+.dtag.blue{border-color:rgba(59,130,246,.3);color:#60a5fa;}
+.penalty-mini{background:var(--bg3);border:1px solid var(--border);padding:10px 12px;margin-bottom:6px;}
+.penalty-section{font-size:9px;color:var(--gold-dim);margin-bottom:3px;}
+.penalty-offence{font-size:11px;color:var(--text2);margin-bottom:5px;line-height:1.4;}
+.penalty-amounts{display:flex;gap:16px;}
+.penalty-amt-item .l{font-size:8px;color:var(--muted);margin-bottom:2px;}
+.penalty-amt-item .v{font-size:11px;color:var(--red);}
+.penalty-amt-item .v.orange{color:#f97316;}
+
+/* SUMMARY CARDS */
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;}
+.summary-card{background:var(--bg3);border:1px solid var(--border);padding:12px 14px;}
+.summary-card-title{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:6px;}
+.summary-card-text{font-size:11px;color:var(--text2);line-height:1.65;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">Black<span>Bear</span> Labs</div>
+    <nav class="topbar-nav">
+      <div class="nav-item active">Parliament</div>
+      <div class="nav-item">Markets</div>
+      <div class="nav-item">Filings</div>
+      <div class="nav-item">API</div>
+    </nav>
+  </div>
+  <div class="topbar-right">
+    <div class="live-badge"><span class="live-dot"></span>Session Live</div>
+    <div class="user-info">Founder <span>/ BBL</span></div>
+    <button class="signout" onclick="window.location.href='index.html'">Sign Out</button>
+  </div>
+</div>
+
+<div class="gold-stripe"></div>
+
+<!-- TICKER -->
+<div class="ticker-bar">
+  <div class="ticker-track">
+    <span class="alert-tick">NEW BILL — Securities Markets Code 2025 — SEBI Act 1992 Repealed</span>
+    <span>Lok Sabha Session: Budget 2026 — 47 Bills Pending</span>
+    <span class="alert-tick">DEBATE LIVE — Finance Minister on PSU Bank Recap</span>
+    <span>CDSL · NSDL · BSE · NSE — Affected by Securities Code</span>
+    <span>Max Penalty Raised to ₹25 Crore — 16 Sections Amended</span>
+    <span>Regulatory Sandbox Introduced — Fintech Tailwind</span>
+    <span class="alert-tick">NEW BILL — Securities Markets Code 2025 — SEBI Act 1992 Repealed</span>
+    <span>Lok Sabha Session: Budget 2026 — 47 Bills Pending</span>
+    <span class="alert-tick">DEBATE LIVE — Finance Minister on PSU Bank Recap</span>
+    <span>CDSL · NSDL · BSE · NSE — Affected by Securities Code</span>
+    <span>Max Penalty Raised to ₹25 Crore — 16 Sections Amended</span>
+    <span>Regulatory Sandbox Introduced — Fintech Tailwind</span>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Parliament</div>
+      <div class="sidebar-item active"><span class="icon">📋</span> Bills Feed <span class="sidebar-badge">3</span></div>
+      <div class="sidebar-item"><span class="icon">🎙</span> Debates <span class="sidebar-badge red">Live</span></div>
+      <div class="sidebar-item"><span class="icon">❓</span> Q&A Hour</div>
+      <div class="sidebar-item"><span class="icon">📅</span> Schedule</div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">By Sector</div>
+      <div class="sidebar-item"><span class="icon">🏦</span> Banking</div>
+      <div class="sidebar-item"><span class="icon">📈</span> Capital Markets</div>
+      <div class="sidebar-item"><span class="icon">⚡</span> Energy</div>
+      <div class="sidebar-item"><span class="icon">🏥</span> Pharma</div>
+      <div class="sidebar-item"><span class="icon">🏗</span> Infrastructure</div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Watchlist</div>
+      <div class="sidebar-item"><span class="icon">⭐</span> CDSL</div>
+      <div class="sidebar-item"><span class="icon">⭐</span> BSE</div>
+      <div class="sidebar-item"><span class="icon">⭐</span> HDFC Bank</div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Tools</div>
+      <div class="sidebar-item"><span class="icon">🔌</span> API Keys</div>
+      <div class="sidebar-item"><span class="icon">🔔</span> Alerts</div>
+      <div class="sidebar-item"><span class="icon">📥</span> Export</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Bills This Session</div>
+        <div class="stat-num gold">47</div>
+        <div class="stat-sub">18th Lok Sabha</div>
+        <div class="stat-delta up">↑ 12 new</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">High Urgency</div>
+        <div class="stat-num red">6</div>
+        <div class="stat-sub">Market-moving</div>
+        <div class="stat-delta up">↑ 2 today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Debates Today</div>
+        <div class="stat-num">14</div>
+        <div class="stat-sub">3 live right now</div>
+        <div class="stat-delta" style="color:var(--green);">● Live</div>
+      </div>
+      <div class="stat-card alert-card">
+        <div class="stat-label">Company Mentions</div>
+        <div class="stat-num gold">38</div>
+        <div class="stat-sub">Last 24 hours</div>
+        <div class="stat-delta up">↑ 8 new</div>
+      </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+      <input class="search-bar" placeholder="Search bills, companies, sectors...">
+      <button class="filter-btn active">All</button>
+      <button class="filter-btn">Capital Markets</button>
+      <button class="filter-btn">Banking</button>
+      <button class="filter-btn">Energy</button>
+      <button class="filter-btn">High Urgency</button>
+      <button class="filter-btn">Regulatory</button>
+    </div>
+
+    <!-- FEED GRID -->
+    <div class="feed-grid">
+
+      <!-- BILLS FEED -->
+      <div class="bill-feed">
+        <div class="sec-head">
+          <div class="sec-title">Recent Bills</div>
+          <div class="sec-action">View all →</div>
+        </div>
+
+        <!-- BILL 1 - Featured -->
+        <div class="bill-card featured" onclick="openDetail('bill1')">
+          <div class="bill-card-top">
+            <div>
+              <div class="bill-meta-top">
+                <span class="bill-number">Bill No. 200 of 2025</span>
+                <span class="bill-house">· Lok Sabha</span>
+              </div>
+              <div class="bill-title">The Securities Markets Code, 2025</div>
+            </div>
+            <div class="sentiment-badge s-regulatory">Regulatory</div>
+          </div>
+          <div class="bill-summary">Consolidates SEBI Act 1992, SCRA 1956, and Depositories Act 1996 into a single unified code. Introduces regulatory sandboxes, enhanced enforcement, Ombudsperson mechanism, and raises maximum penalties to ₹25 crore. Directly impacts all market infrastructure institutions, intermediaries, and listed entities.</div>
+          <div class="bill-tags">
+            <span class="bill-tag">Capital Markets</span>
+            <span class="bill-tag">SEBI</span>
+            <span class="bill-tag">Depositories</span>
+            <span class="bill-tag">Derivatives</span>
+            <span class="bill-tag">Market Abuse</span>
+            <span class="bill-tag">Insider Trading</span>
+          </div>
+          <div class="bill-footer">
+            <div class="bill-footer-item urgency-high">● High Urgency</div>
+            <div class="bill-footer-item">18 Chapters · 157 Clauses</div>
+            <div class="bill-footer-item">16 Penalties</div>
+            <div class="bill-footer-item">Min Sitharaman</div>
+            <div class="affected-stocks">
+              <span class="stock-tag">CDSL</span>
+              <span class="stock-tag">BSE</span>
+              <span class="stock-tag">NSE</span>
+              <span class="stock-tag">NSDL</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- BILL 2 -->
+        <div class="bill-card" onclick="openDetail('bill2')">
+          <div class="bill-card-top">
+            <div>
+              <div class="bill-meta-top">
+                <span class="bill-number">Bill No. 187 of 2025</span>
+                <span class="bill-house">· Rajya Sabha</span>
+              </div>
+              <div class="bill-title">The Banking Laws (Amendment) Bill, 2025</div>
+            </div>
+            <div class="sentiment-badge s-neutral">Neutral</div>
+          </div>
+          <div class="bill-summary">Amends Banking Regulation Act 1949 and RBI Act 1934. Introduces new governance norms for cooperative banks, raises director tenure limits, and enhances RBI's supervisory powers over scheduled banks. Compliance cost impact for mid-size private banks.</div>
+          <div class="bill-tags">
+            <span class="bill-tag">Banking</span>
+            <span class="bill-tag">RBI</span>
+            <span class="bill-tag">Cooperative Banks</span>
+            <span class="bill-tag">Governance</span>
+          </div>
+          <div class="bill-footer">
+            <div class="bill-footer-item urgency-med">● Medium Urgency</div>
+            <div class="bill-footer-item">9 Chapters · 42 Clauses</div>
+            <div class="bill-footer-item">Nirmala Sitharaman</div>
+            <div class="affected-stocks">
+              <span class="stock-tag">HDFC</span>
+              <span class="stock-tag">ICICI</span>
+              <span class="stock-tag">SBI</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- BILL 3 -->
+        <div class="bill-card" onclick="openDetail('bill3')">
+          <div class="bill-card-top">
+            <div>
+              <div class="bill-meta-top">
+                <span class="bill-number">Bill No. 193 of 2025</span>
+                <span class="bill-house">· Lok Sabha</span>
+              </div>
+              <div class="bill-title">The Electricity (Amendment) Bill, 2025</div>
+            </div>
+            <div class="sentiment-badge s-bullish">Bullish</div>
+          </div>
+          <div class="bill-summary">Major amendment to Electricity Act 2003. Enables open access for renewable energy, introduces smart metering mandate for all consumers above 10kW, and creates new regulatory framework for green hydrogen distribution. Positive for renewable energy players and smart grid companies.</div>
+          <div class="bill-tags">
+            <span class="bill-tag">Energy</span>
+            <span class="bill-tag">Renewables</span>
+            <span class="bill-tag">Green Hydrogen</span>
+            <span class="bill-tag">Smart Grid</span>
+          </div>
+          <div class="bill-footer">
+            <div class="bill-footer-item urgency-high">● High Urgency</div>
+            <div class="bill-footer-item">12 Chapters · 89 Clauses</div>
+            <div class="bill-footer-item">Manohar Lal Khattar</div>
+            <div class="affected-stocks">
+              <span class="stock-tag">ADANI GR</span>
+              <span class="stock-tag">TATA PWR</span>
+              <span class="stock-tag">NTPC</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="right-panel">
+
+        <!-- LIVE DEBATES -->
+        <div class="panel-box">
+          <div class="panel-header">
+            <div class="panel-header-title"><span class="live-dot"></span> Live Debate Feed</div>
+            <div class="sec-action">Full →</div>
+          </div>
+          <div class="debate-list">
+
+            <div class="debate-item">
+              <div class="debate-time">11:43 AM · Lok Sabha · Question Hour</div>
+              <div class="debate-speaker">Nirmala Sitharaman</div>
+              <div class="debate-role">Minister of Finance</div>
+              <div class="debate-text">"The government is committed to recapitalisation of PSU banks. We have allocated ₹15,000 crore in this budget specifically for bank strengthening. SBI and PNB are adequately capitalised as of Q3."</div>
+              <div class="debate-companies">
+                <span class="co-tag">SBI</span>
+                <span class="co-tag">PNB</span>
+                <span class="co-tag">PSU Banks</span>
+              </div>
+              <span class="debate-sentiment s-bullish" style="font-size:8px;padding:2px 6px;background:rgba(46,204,113,.08);color:var(--green);">Bullish</span>
+            </div>
+
+            <div class="debate-item">
+              <div class="debate-time">11:31 AM · Lok Sabha · General</div>
+              <div class="debate-speaker">Rahul Gandhi</div>
+              <div class="debate-role">Leader of Opposition</div>
+              <div class="debate-text">"Adani Group's exposure in government contracts raises serious questions about level playing field for private sector. We demand a JPC inquiry into all infrastructure contracts awarded since 2019."</div>
+              <div class="debate-companies">
+                <span class="co-tag">ADANI</span>
+              </div>
+              <span class="debate-sentiment" style="font-size:8px;padding:2px 6px;background:rgba(231,76,60,.08);color:var(--red);">Bearish Signal</span>
+            </div>
+
+            <div class="debate-item">
+              <div class="debate-time">11:18 AM · Rajya Sabha · Q&A</div>
+              <div class="debate-speaker">Piyush Goyal</div>
+              <div class="debate-role">Minister of Commerce</div>
+              <div class="debate-text">"PLI scheme for electronics has attracted ₹2.1 lakh crore in investments. Apple, Samsung and Dixon Technologies are our flagship successes. We expect ₹4.5 lakh crore in production by FY27."</div>
+              <div class="debate-companies">
+                <span class="co-tag">DIXON</span>
+                <span class="co-tag">Electronics PLI</span>
+              </div>
+              <span class="debate-sentiment" style="font-size:8px;padding:2px 6px;background:rgba(46,204,113,.08);color:var(--green);">Bullish</span>
+            </div>
+
+            <div class="debate-item">
+              <div class="debate-time">10:52 AM · Lok Sabha · Bill Reading</div>
+              <div class="debate-speaker">V. Anantha Nageswaran</div>
+              <div class="debate-role">Chief Economic Adviser</div>
+              <div class="debate-text">"The Securities Markets Code will significantly improve ease of doing business for market participants. The consolidation removes overlapping jurisdictions that previously created compliance uncertainty."</div>
+              <div class="debate-companies">
+                <span class="co-tag">CDSL</span>
+                <span class="co-tag">BSE</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ALERTS -->
+        <div class="panel-box">
+          <div class="panel-header">
+            <div class="panel-header-title">🔔 Alerts</div>
+            <div class="sec-action">Settings →</div>
+          </div>
+          <div class="alert-list">
+            <div class="alert-item">
+              <div class="alert-dot a-high"></div>
+              <div>
+                <div class="alert-text"><strong>CDSL mentioned</strong> — Securities Markets Code directly names depositories under new registration chapter</div>
+                <div class="alert-time">2 min ago</div>
+              </div>
+            </div>
+            <div class="alert-item">
+              <div class="alert-dot a-high"></div>
+              <div>
+                <div class="alert-text"><strong>New bill introduced</strong> — Electricity Amendment Bill 2025 — Bullish for ADANI GR, TATA PWR</div>
+                <div class="alert-time">18 min ago</div>
+              </div>
+            </div>
+            <div class="alert-item">
+              <div class="alert-dot a-med"></div>
+              <div>
+                <div class="alert-text"><strong>SBI mentioned</strong> — Finance Minister confirms PSU bank recap allocation of ₹15,000 crore</div>
+                <div class="alert-time">34 min ago</div>
+              </div>
+            </div>
+            <div class="alert-item">
+              <div class="alert-dot a-low"></div>
+              <div>
+                <div class="alert-text"><strong>DIXON mentioned</strong> — PLI electronics success cited, ₹4.5L crore production target FY27</div>
+                <div class="alert-time">1 hr ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PENALTY TABLE -->
+    <div class="sec-head">
+      <div class="sec-title">Penalty Schedule — Securities Markets Code 2025</div>
+      <div class="sec-action">Export CSV →</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Section</th>
+            <th>Offence</th>
+            <th>Max Fine</th>
+            <th>Imprisonment</th>
+            <th>Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">§94</td><td>Failure to comply with Board orders</td><td class="penalty-amt">₹10 Crore</td><td class="imprison">Up to 10 years</td><td><span class="dtag red" style="font-size:8px;padding:1px 5px;">Criminal</span></td></tr>
+          <tr><td class="mono">§96</td><td>Market abuse with criminal intent</td><td class="penalty-amt">₹10 Crore</td><td class="imprison">Up to 10 years</td><td><span class="dtag red" style="font-size:8px;padding:1px 5px;">Criminal</span></td></tr>
+          <tr><td class="mono">§95</td><td>Non-compliance with Investigating Officer</td><td class="penalty-amt">₹5 Crore</td><td class="imprison">Up to 5 years</td><td><span class="dtag red" style="font-size:8px;padding:1px 5px;">Criminal</span></td></tr>
+          <tr><td class="mono">§109</td><td>Residual — no specific provision</td><td class="penalty-amt">₹25 Crore</td><td>—</td><td><span class="dtag blue" style="font-size:8px;padding:1px 5px;">Civil</span></td></tr>
+          <tr><td class="mono">§104</td><td>Failure to conduct business per Code</td><td class="penalty-amt">₹10 Crore</td><td>—</td><td><span class="dtag blue" style="font-size:8px;padding:1px 5px;">Civil</span></td></tr>
+          <tr><td class="mono">§97</td><td>Failure to do certain acts (administrative)</td><td class="penalty-amt">₹10 Crore</td><td>—</td><td><span class="dtag blue" style="font-size:8px;padding:1px 5px;">Civil</span></td></tr>
+          <tr><td class="mono">§98</td><td>Default by securities markets service provider</td><td class="penalty-amt">₹5 Crore</td><td>—</td><td><span class="dtag blue" style="font-size:8px;padding:1px 5px;">Civil</span></td></tr>
+          <tr><td class="mono">§105</td><td>Failure to furnish periodical returns</td><td class="penalty-amt">₹1 Crore</td><td>—</td><td><span class="dtag blue" style="font-size:8px;padding:1px 5px;">Civil</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- BILL DETAIL PANEL -->
+<div class="detail-overlay" id="detailOverlay" onclick="handleDetailClick(event)">
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-topbar">
+      <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);">Bill Detail</div>
+      <button class="detail-close" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="detail-body" id="detailBody"></div>
+  </div>
+</div>
+
+<script>
+const bills = {
+  bill1: {
+    number: 'Bill No. 200 of 2025',
+    name: 'The Securities Markets Code, 2025',
+    house: 'Lok Sabha',
+    date: '15 December 2025',
+    minister: 'Smt. Nirmala Sitharaman',
+    ministry: 'Finance & Corporate Affairs',
+    chapters: 18, clauses: 157, schedules: 4,
+    sentiment: 'Regulatory',
+    urgency: 'High',
+    regulator: 'SEBI',
+    executive_summary: 'The Securities Markets Code, 2025 consolidates three foundational securities laws — the Securities Contracts (Regulation) Act 1956, the SEBI Act 1992, and the Depositories Act 1996 — into a single unified framework. The Code modernises the regulatory architecture for Indian capital markets, introducing enhanced enforcement powers, a comprehensive market abuse framework, and new investor protection mechanisms including an Ombudsperson and Investor Protection Fund.',
+    trader_summary: 'Traders face enhanced market abuse prohibitions under Section 93, expanded SEBI interim order powers up to 180 days (extendable to 2 years), and new settlement finality protections through clearing corporations. Maximum criminal penalties reach ₹10 crore with 10 year imprisonment. Regulatory sandbox provisions open new avenues for algo and fintech trading strategies.',
+    investor_summary: 'Investor protections significantly strengthened — mandatory Ombudsperson at every SEBI office, Investor Protection Fund, clearer delisting procedures, mandatory dematerialisation, and formal investor charter with rights to fair treatment and timely disclosure.',
+    compliance_summary: 'All intermediaries must re-register under new Chapter IV norms. Enhanced fit-and-proper criteria, periodic returns, client fund segregation, and bye-law compliance mandatory. Settlement mechanism under Section 26 allows civil proceeding resolution by payment.',
+    acts_repealed: ['Securities Contracts (Regulation) Act, 1956', 'Securities and Exchange Board of India Act, 1992', 'Depositories Act, 1996'],
+    acts_amended: ['Prevention of Money-Laundering Act, 2002', 'Fugitive Economic Offenders Act, 2018', 'Mediation Act, 2023', 'Economic Offences Act, 1974'],
+    affected: ['CDSL', 'NSDL', 'BSE', 'NSE', 'CAMS', 'KFintech', 'Angel One', 'Zerodha', 'ICICI Securities'],
+    new_entities: ['Ombudsperson', 'Settlement Committee', 'Investor Protection Fund'],
+    penalties: [
+      {section:'§94', offence:'Failure to comply with Board orders', fine:'₹10 Crore', jail:'10 years'},
+      {section:'§96', offence:'Market abuse — criminal intent', fine:'₹10 Crore', jail:'10 years'},
+      {section:'§109', offence:'Residual penalty', fine:'₹25 Crore', jail:'—'},
+      {section:'§104', offence:'Business conduct violations', fine:'₹10 Crore', jail:'—'},
+    ]
+  },
+  bill2: {
+    number: 'Bill No. 187 of 2025',
+    name: 'The Banking Laws (Amendment) Bill, 2025',
+    house: 'Rajya Sabha',
+    date: '8 November 2025',
+    minister: 'Smt. Nirmala Sitharaman',
+    ministry: 'Finance & Corporate Affairs',
+    chapters: 9, clauses: 42, schedules: 1,
+    sentiment: 'Neutral',
+    urgency: 'Medium',
+    regulator: 'RBI',
+    executive_summary: 'Amends the Banking Regulation Act 1949 and RBI Act 1934 to strengthen governance of cooperative banks, revise director tenure norms, and enhance RBI supervisory powers. Aims to align Indian banking regulation with Basel III standards and international best practices.',
+    trader_summary: 'Limited immediate market impact. Governance tightening may create short-term compliance costs for mid-size private banks. Cooperative bank amendments could improve asset quality visibility for Bank Nifty constituents over 12-18 months.',
+    investor_summary: 'Better governance at cooperative banks reduces systemic risk. Director tenure limits aligned with corporate governance best practices. Enhanced RBI oversight provides stronger depositor protection.',
+    compliance_summary: 'All scheduled banks must review director appointment processes. Cooperative banks require operational overhaul to meet new RBI norms within 12 months of enactment. Board composition changes mandatory.',
+    acts_repealed: [],
+    acts_amended: ['Banking Regulation Act, 1949', 'Reserve Bank of India Act, 1934'],
+    affected: ['HDFC Bank', 'ICICI Bank', 'SBI', 'Axis Bank', 'Cooperative Banks'],
+    new_entities: ['Enhanced RBI Supervisory Board'],
+    penalties: [{section:'§31', offence:'Non-compliance with governance norms', fine:'₹5 Crore', jail:'—'}]
+  },
+  bill3: {
+    number: 'Bill No. 193 of 2025',
+    name: 'The Electricity (Amendment) Bill, 2025',
+    house: 'Lok Sabha',
+    date: '2 December 2025',
+    minister: 'Manohar Lal Khattar',
+    ministry: 'Power & New and Renewable Energy',
+    chapters: 12, clauses: 89, schedules: 2,
+    sentiment: 'Bullish',
+    urgency: 'High',
+    regulator: 'CERC / SERCs',
+    executive_summary: 'Major amendment to the Electricity Act 2003 enabling open access for renewable energy at distribution level, introducing smart metering mandate for consumers above 10kW, and creating a new regulatory framework for green hydrogen distribution and green ammonia. Designed to accelerate India\'s 500GW renewable energy target by 2030.',
+    trader_summary: 'Strongly bullish for renewable energy developers, smart metering companies, and green hydrogen players. Open access expansion creates direct revenue opportunity for solar and wind IPPs. Smart metering mandate benefits Genus Power, HPL Electric, and Schneider Electric India. Adani Green, Tata Power, and NTPC Renewable are primary beneficiaries.',
+    investor_summary: 'Structural tailwind for the entire renewable energy value chain. Accelerates private sector investment in green energy infrastructure. Creates new revenue streams for discom reform beneficiaries.',
+    compliance_summary: 'DISCOMs must implement open access framework within 18 months. All industrial consumers above 10kW required to install smart meters within 24 months. Green hydrogen distributors must register under new CERC framework.',
+    acts_repealed: [],
+    acts_amended: ['Electricity Act, 2003'],
+    affected: ['Adani Green', 'Tata Power', 'NTPC', 'Power Grid', 'Genus Power', 'HPL Electric'],
+    new_entities: ['Green Hydrogen Regulatory Authority', 'Open Access Management Committee'],
+    penalties: [{section:'§142A', offence:'Smart metering non-compliance', fine:'₹2 Crore', jail:'—'}]
+  }
+};
+
+function openDetail(id) {
+  const b = bills[id];
+  if(!b) return;
+  const sentColor = b.sentiment==='Bullish'?'color:var(--green)':b.sentiment==='Bearish'?'color:var(--red)':'color:#60a5fa';
+  const urgColor = b.urgency==='High'?'color:var(--red)':b.urgency==='Medium'?'color:var(--gold)':'color:var(--green)';
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-section">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;">
+        <div>
+          <div style="font-size:9px;color:var(--gold-dim);letter-spacing:.15em;margin-bottom:6px;">${b.number} · ${b.house}</div>
+          <div style="font-family:'Instrument Serif',serif;font-size:22px;font-weight:400;line-height:1.2;color:var(--text);margin-bottom:4px;">${b.name}</div>
+        </div>
+        <div class="sentiment-badge s-${b.sentiment.toLowerCase()}" style="flex-shrink:0;margin-top:4px;">${b.sentiment}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+        <div class="detail-row"><div class="detail-key">Minister</div><div class="detail-val">${b.minister}</div></div>
+        <div class="detail-row"><div class="detail-key">Ministry</div><div class="detail-val">${b.ministry}</div></div>
+        <div class="detail-row"><div class="detail-key">Introduced</div><div class="detail-val">${b.date}</div></div>
+        <div class="detail-row"><div class="detail-key">Regulator</div><div class="detail-val gold">${b.regulator}</div></div>
+        <div class="detail-row"><div class="detail-key">Chapters / Clauses</div><div class="detail-val">${b.chapters} / ${b.clauses}</div></div>
+        <div class="detail-row"><div class="detail-key">Urgency</div><div class="detail-val" style="${urgColor}">● ${b.urgency}</div></div>
+      </div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-card" style="grid-column:1/-1;">
+        <div class="summary-card-title">Executive Summary</div>
+        <div class="summary-card-text">${b.executive_summary}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card-title">Trader Summary</div>
+        <div class="summary-card-text">${b.trader_summary}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card-title">Compliance Summary</div>
+        <div class="summary-card-text">${b.compliance_summary}</div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Laws Affected</div>
+      ${b.acts_repealed.length ? `<div style="margin-bottom:8px;"><div style="font-size:8.5px;color:var(--muted);margin-bottom:4px;letter-spacing:.1em;">REPEALED</div><div class="tag-row">${b.acts_repealed.map(a=>`<span class="dtag red">${a}</span>`).join('')}</div></div>` : ''}
+      ${b.acts_amended.length ? `<div><div style="font-size:8.5px;color:var(--muted);margin-bottom:4px;letter-spacing:.1em;">AMENDED</div><div class="tag-row">${b.acts_amended.map(a=>`<span class="dtag">${a}</span>`).join('')}</div></div>` : ''}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Affected Entities</div>
+      <div class="tag-row">${b.affected.map(a=>`<span class="dtag gold">${a}</span>`).join('')}</div>
+      ${b.new_entities.length ? `<div style="margin-top:8px;"><div style="font-size:8.5px;color:var(--muted);margin-bottom:4px;letter-spacing:.1em;">NEW ENTITIES CREATED</div><div class="tag-row">${b.new_entities.map(a=>`<span class="dtag blue">${a}</span>`).join('')}</div></div>` : ''}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Key Penalties</div>
+      ${b.penalties.map(p=>`
+        <div class="penalty-mini">
+          <div class="penalty-section">${p.section}</div>
+          <div class="penalty-offence">${p.offence}</div>
+          <div class="penalty-amounts">
+            <div class="penalty-amt-item"><div class="l">Max Fine</div><div class="v">${p.fine}</div></div>
+            ${p.jail !== '—' ? `<div class="penalty-amt-item"><div class="l">Imprisonment</div><div class="v orange">${p.jail}</div></div>` : ''}
+          </div>
+        </div>`).join('')}
+    </div>
+  `;
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+function closeDetail(){ document.getElementById('detailOverlay').classList.remove('open'); }
+function handleDetailClick(e){ if(e.target===document.getElementById('detailOverlay')) closeDetail(); }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDetail(); });
+
+// Filter buttons
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// Sidebar items
+document.querySelectorAll('.sidebar-item').forEach(item=>{
+  item.addEventListener('click',()=>{
+    document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));
+    item.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
